@@ -12,8 +12,10 @@ func main() {
 	loadstate()
 	defer savestate()
 
-	var obj map[string]interface{}
-	enc := json.NewEncoder(os.Stdout)
+	var obj json.RawMessage
+	var uuidObj struct {
+		ID string `json:"uuid"`
+	}
 	dec := json.NewDecoder(os.Stdin) //TODO: buffered reader?
 
 	for {
@@ -24,19 +26,11 @@ func main() {
 			}
 			panic(err)
 		}
-		uuid, ok := obj["uuid"].(string)
-		if !ok { // no uuid or not a string? pass it through.
-			if err := enc.Encode(obj); err != nil {
-				panic(err)
-			}
-			continue
-		}
-		ser, err := json.Marshal(obj)
-		if err != nil {
+		if err := json.Unmarshal(obj, &uuidObj); err != nil {
 			panic(err)
 		}
-		if lastHashCheck(uuid, ser) {
-			if _, err := os.Stdout.Write(ser); err != nil {
+		if lastHashCheck(uuidObj.ID, obj) {
+			if _, err := os.Stdout.Write(obj); err != nil {
 				panic(err)
 			}
 			if _, err := os.Stdout.Write([]byte("\n")); err != nil {
